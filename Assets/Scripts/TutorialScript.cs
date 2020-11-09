@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class TutorialScript : MonoBehaviour
 {
@@ -16,7 +17,9 @@ public class TutorialScript : MonoBehaviour
     public GameObject obj_nest;
     public GameObject obj_grab;
     public GameObject obj_wall1;
+    public GameObject obj_wall1_5;
     public GameObject obj_wall2;
+    public GameObject obj_speaker;
     public PlayerMovement s_player;
     public bool b_hazardenter = false;
     float f_timer = 0;
@@ -48,6 +51,7 @@ public class TutorialScript : MonoBehaviour
                 if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D))
                 {
                     t_scoretext.text = "Use Shift to sprint";
+                    s_player.e_currstate = PlayerMovement.FerretState.Idle;
 
                     if (Input.GetKey(KeyCode.LeftShift))
                     {
@@ -85,6 +89,7 @@ public class TutorialScript : MonoBehaviour
             case 4:
                 if (obj_nest.GetComponent<Nest>().i_teamscore > 0)
                 {
+                    obj_wall1_5.GetComponent<BoxCollider>().enabled = false;
                     t_nesttext.gameObject.SetActive(false);
                     t_scoretext.text = "Hazards like this rug force you to let go of \nanything you have picked up and/or slow you down";
                     i_step++;
@@ -105,10 +110,17 @@ public class TutorialScript : MonoBehaviour
             case 6:
                 if (obj_remote.GetComponent<Remote>().b_speakeron == true)
                 {
+                    obj_speaker.GetComponent<AudioSource>().Play();
                     t_remotetext.gameObject.SetActive(false);
                     t_scoretext.text = "Good luck Bandit";
                     obj_wall2.GetComponent<BoxCollider>().enabled = false;
                     i_step++;
+                }
+                break;
+            case 7:
+                if (s_player.gameObject.transform.position.y <= -60f)
+                {
+                    SceneManager.LoadScene("TutorialMenu");
                 }
                 break;
         }
