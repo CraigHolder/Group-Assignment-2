@@ -9,15 +9,28 @@ public class PlayerMovement : MonoBehaviour
 {
     public GameObject obj_player;
     public CharacterController c_control;
+    Command c_command;
+
+    public HazardSpill h_curSpill;
+    public int i_lastKey;
+
     public Vector3 vec3_checkpoint;
+
     public float f_speed;
     public float f_jumpspeed;
     public float f_jumptime;
     public float f_gravity;
+
     public FerretState e_currstate;
+
     public bool b_isgrabbing = false;
     public Grabber s_grab;
+
     float f_mouseyprev;
+
+    public bool b_disableachieve = false;
+
+    public FlyWeight fly_shareddata;
 
     public float f_jumptimer;
 
@@ -27,6 +40,7 @@ public class PlayerMovement : MonoBehaviour
     {
         Idle,
         Jumping,
+        Slipping,
     }
 
     //TEMPORARY UI STUFF
@@ -49,10 +63,12 @@ public class PlayerMovement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        i_lastKey = 0;
         f_jumptimer = f_jumptime;
         vec3_checkpoint = new Vector3(48, 1, -48);
         Cursor.lockState = CursorLockMode.Locked;
         f_mouseyprev = Input.GetAxis("Mouse Y");
+
 
         //TEMPORARY UI STUFF
         textpro = text_obj.GetComponent<TMPro.TextMeshProUGUI>();
@@ -135,24 +151,59 @@ public class PlayerMovement : MonoBehaviour
         textpro.text = f_stamina.ToString("#");
 
         //Movement
-        if (Input.GetKey(KeyCode.W))
+        if (e_currstate != FerretState.Slipping)
         {
-            c_control.Move(transform.forward * f_speed * Time.deltaTime * f_sprintmult);
-            //c_control.Move(new Vector3(0, 0, i_speed * Time.deltaTime));
+            if (Input.GetKey(KeyCode.W))
+            {
+                c_control.Move(transform.forward * f_speed * Time.deltaTime * f_sprintmult);
+                i_lastKey = 0;
+                //c_control.Move(new Vector3(0, 0, i_speed * Time.deltaTime));
+            }
+            else if (Input.GetKey(KeyCode.S))
+            {
+                c_control.Move(transform.forward * -f_speed * Time.deltaTime * f_sprintmult);
+                i_lastKey = 1;
+            }
+
+            if (Input.GetKey(KeyCode.D))
+            {
+                c_control.Move(transform.right * f_speed * Time.deltaTime * f_sprintmult);
+                i_lastKey = 2;
+            }
+            else if (Input.GetKey(KeyCode.A))
+            {
+                c_control.Move(transform.right * -f_speed * Time.deltaTime * f_sprintmult);
+                i_lastKey = 3;
+            }
         }
-        else if (Input.GetKey(KeyCode.S))
+        else
         {
-            c_control.Move(transform.forward * -f_speed * Time.deltaTime * f_sprintmult);
+
+            //curSpill needs to reference something
+            if (h_curSpill != null)
+            {
+                if (h_curSpill.getSurface() == true)
+                {
+                    Debug.Log("SLIP");
+                    switch (i_lastKey)
+                    {
+                        case 0:
+                            c_control.Move(transform.forward * f_speed * Time.deltaTime * h_curSpill.getSpeed());
+                            break;
+                        case 1:
+                            c_control.Move(transform.forward * -f_speed * Time.deltaTime * h_curSpill.getSpeed());
+                            break;
+                        case 2:
+                            c_control.Move(transform.right * f_speed * Time.deltaTime * h_curSpill.getSpeed());
+                            break;
+                        case 3:
+                            c_control.Move(transform.right * -f_speed * Time.deltaTime * h_curSpill.getSpeed());
+                            break;
+                    }
+                }
+            }
         }
 
-        if (Input.GetKey(KeyCode.D))
-        {
-            c_control.Move(transform.right * f_speed * Time.deltaTime * f_sprintmult);
-        }
-        else if (Input.GetKey(KeyCode.A))
-        {
-            c_control.Move(transform.right * -f_speed * Time.deltaTime * f_sprintmult);
-        }
 
         //Jumping
         if (Input.GetKey(KeyCode.Space) && c_control.isGrounded == true)
@@ -194,14 +245,10 @@ public class PlayerMovement : MonoBehaviour
         }
 
 
-        //Grab
-        if (Input.GetKeyDown(KeyCode.E) && b_isgrabbing == false)
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
-            b_isgrabbing = true;
-        }
-        else if (Input.GetKeyDown(KeyCode.E) && b_isgrabbing == true)
-        {
-            b_isgrabbing = false;
+            c_command = new GotoMainMenuCommand();
+            c_command.Execute(c_command, obj_player);
         }
 
         switch (e_currstate)
